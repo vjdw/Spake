@@ -3,16 +3,16 @@
   <Profiles />
   <Settings>
     <Setting Name="IntervalMs" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">3000</Value>
+      <Value Profile="(Default)">300000</Value>
     </Setting>
     <Setting Name="DurationMs" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">2000</Value>
     </Setting>
     <Setting Name="Gain" Type="System.Double" Scope="User">
-      <Value Profile="(Default)">0.2</Value>
+      <Value Profile="(Default)">0.7</Value>
     </Setting>
     <Setting Name="FrequencyHz" Type="System.Int32" Scope="User">
-      <Value Profile="(Default)">240</Value>
+      <Value Profile="(Default)">20000</Value>
     </Setting>
   </Settings>
 </SettingsFile>

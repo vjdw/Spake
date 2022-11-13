@@ -18,6 +18,8 @@ using System.Windows.Shapes;
 using System.Drawing;
 using System.IO;
 using Spake.Properties;
+//using System.Windows.Forms;
+using Hardcodet.Wpf.TaskbarNotification;
 
 namespace Spake
 {
@@ -26,7 +28,8 @@ namespace Spake
     /// </summary>
     public partial class MainWindow : Window
     {
-        private ToneScheduler _toneScheduler;
+        private static ToneScheduler _toneScheduler;
+        private TaskbarIcon _taskbarIcon;
 
         public string IconPath { get; set; }
 
@@ -38,7 +41,7 @@ namespace Spake
 
         public int ToneSchedulerFrequencyHz
         {
-            get { return _toneScheduler.FrequencyHz ; }
+            get { return _toneScheduler.FrequencyHz; }
             set { _toneScheduler.FrequencyHz = value; }
         }
 
@@ -59,26 +62,30 @@ namespace Spake
             InitializeComponent();
             DataContext = this;
 
-            _toneScheduler = new ToneScheduler(
-                (int)Settings.Default["IntervalMs"],
-                (int)Settings.Default["DurationMs"],
-                (int)Settings.Default["FrequencyHz"],
-                (double)Settings.Default["Gain"]);
+            _taskbarIcon = (TaskbarIcon)FindResource("NotifyIcon");
+            _taskbarIcon.Icon = new Icon("./Icons/idle.ico");
 
-            _toneScheduler.ToneStarted += ToneScheduler_ToneStarted;
-            _toneScheduler.ToneEnded += ToneScheduler_ToneEnded;
+            if (_toneScheduler == null)
+            {
+                _toneScheduler = new ToneScheduler(
+                    (int)Settings.Default["IntervalMs"],
+                    (int)Settings.Default["DurationMs"],
+                    (int)Settings.Default["FrequencyHz"],
+                    (double)Settings.Default["Gain"]);
 
-            taskbarIcon.Icon = new Icon("./Icons/idle.ico");
+                _toneScheduler.ToneStarted += ToneScheduler_ToneStarted;
+                _toneScheduler.ToneEnded += ToneScheduler_ToneEnded;
+            }
         }
 
         private void ToneScheduler_ToneStarted(object? sender, EventArgs e)
         {
-            taskbarIcon.Icon = new Icon("./Icons/playing.ico");
+            _taskbarIcon.Icon = new Icon("./Icons/playing.ico");
         }
 
         private void ToneScheduler_ToneEnded(object? sender, EventArgs e)
         {
-            taskbarIcon.Icon = new Icon("./Icons/idle.ico");
+            _taskbarIcon.Icon = new Icon("./Icons/idle.ico");
         }
 
         private void btnSave_Click(object sender, RoutedEventArgs e)
@@ -93,6 +100,19 @@ namespace Spake
             Settings.Default["Gain"] = _toneScheduler.Gain;
             Settings.Default["FrequencyHz"] = _toneScheduler.FrequencyHz;
             Settings.Default.Save();
+        }
+
+        private void Window_StateChanged(object sender, EventArgs e)
+        {
+            if (WindowState == WindowState.Minimized)
+            {
+                Application.Current.MainWindow.Hide();
+            }
+        }
+
+        private async void btnTest_Click(object sender, RoutedEventArgs e)
+        {
+            await _toneScheduler.Test();
         }
     }
 }

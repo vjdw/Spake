@@ -38,12 +38,24 @@ namespace Spake
         {
             while(true)
             {
-                await Task.Delay(IntervalMs);
+                try
+                {
+                    OnToneStarted();
+                    await Play();
+                    OnToneEnded();
+                }
+                catch (Exception ex)
+                {
+                    EventLog.WriteEntry("Spake ToneScheduler Schedule", ex.Message, EventLogEntryType.Error);
+                }
 
-                OnToneStarted();
-                await Play();
-                OnToneEnded();
+                await Task.Delay(IntervalMs);
             };
+        }
+
+        public async Task Test()
+        {
+            await Play();
         }
 
         private async Task Play()

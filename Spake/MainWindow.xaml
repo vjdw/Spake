@@ -6,7 +6,8 @@
         xmlns:tb="http://www.hardcodet.net/taskbar" 
         xmlns:local="clr-namespace:Spake"
         mc:Ignorable="d"
-        Title="Speaker Waker" Height="320" Width="400">
+        Title="Speaker Waker" Height="320" Width="400"
+        StateChanged="Window_StateChanged">
 
     <Grid>
 
@@ -21,8 +22,10 @@
             <TextBox Text="{Binding ToneSchedulerGain }" />
         </StackPanel>
 
-        <tb:TaskbarIcon Name="taskbarIcon" />
         <Button x:Name="btnSave" Content="Save" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Click="btnSave_Click" Height="24" Width="65"/>
 
+        <Button x:Name="btnTest" Content="Test" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Click="btnTest_Click" Height="24" Width="65"/>
+
     </Grid>
+
 </Window>
