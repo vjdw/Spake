@@ -14,5 +14,11 @@
     <Setting Name="FrequencyHz" Type="System.Int32" Scope="User">
       <Value Profile="(Default)">20000</Value>
     </Setting>
+    <Setting Name="StartAtLogin" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
+    <Setting Name="StartMinimised" Type="System.Boolean" Scope="User">
+      <Value Profile="(Default)">False</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

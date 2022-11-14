@@ -7,7 +7,8 @@
         xmlns:local="clr-namespace:Spake"
         mc:Ignorable="d"
         Title="Speaker Waker" Height="320" Width="400"
-        StateChanged="Window_StateChanged">
+        StateChanged="Window_StateChanged"
+        Closing="Window_Closing">
 
     <Grid>
 
@@ -22,9 +23,9 @@
             <TextBox Text="{Binding ToneSchedulerGain }" />
         </StackPanel>
 
-        <Button x:Name="btnSave" Content="Save" HorizontalAlignment="Right" Margin="0,0,10,10" VerticalAlignment="Bottom" Click="btnSave_Click" Height="24" Width="65"/>
+        <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,14" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
 
-        <Button x:Name="btnTest" Content="Test" HorizontalAlignment="Left" Margin="10,0,0,10" VerticalAlignment="Bottom" Click="btnTest_Click" Height="24" Width="65"/>
+        <Button x:Name="btnTest" Content="Test Tone" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10" Click="btnTest_Click" Height="24" Width="113"/>
 
     </Grid>
 

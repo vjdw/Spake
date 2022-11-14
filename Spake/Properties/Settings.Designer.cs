@@ -70,5 +70,29 @@ namespace Spake.Properties {
                 this["FrequencyHz"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool StartAtLogin {
+            get {
+                return ((bool)(this["StartAtLogin"]));
+            }
+            set {
+                this["StartAtLogin"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool StartMinimised {
+            get {
+                return ((bool)(this["StartMinimised"]));
+            }
+            set {
+                this["StartMinimised"] = value;
+            }
+        }
     }
 }
