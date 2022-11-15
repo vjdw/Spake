@@ -36,13 +36,11 @@ namespace Spake
 
         private async Task Schedule()
         {
-            while(true)
+            while (true)
             {
                 try
                 {
-                    OnToneStarted();
                     await Play();
-                    OnToneEnded();
                 }
                 catch (Exception ex)
                 {
@@ -53,39 +51,47 @@ namespace Spake
             };
         }
 
-        public async Task Test()
+        public async Task Play()
         {
-            await Play();
-        }
-
-        private async Task Play()
-        {
-            var wavelengthMs = 1000d / FrequencyHz;
-            var durationRoundedToCompleteWavelengthsMs = wavelengthMs * Math.Floor((DurationMs / wavelengthMs));
-
-            var signal = new SignalGenerator()
+            try
             {
-                Gain = Gain,
-                Frequency = FrequencyHz,
-                Type = SignalGeneratorType.Sin
-            }
-            .Take(TimeSpan.FromMilliseconds(durationRoundedToCompleteWavelengthsMs));
+                OnToneStarted();
 
-            using (var waveout = new WaveOutEvent())
-            {
-                waveout.Init(signal);
-                waveout.Volume = 0f;
-                waveout.Play();
+                var wavelengthMs = 1000d / FrequencyHz;
+                var durationRoundedToCompleteWavelengthsMs = wavelengthMs * Math.Floor((DurationMs / wavelengthMs));
 
-                while (waveout.PlaybackState == PlaybackState.Playing)
+                var signal = new SignalGenerator()
                 {
-                    var posMs = waveout.GetPositionTimeSpan().TotalMilliseconds;
-                    var middlePos = (float)durationRoundedToCompleteWavelengthsMs / 2;
-                    var distanceFromMiddle = Math.Abs((float)posMs - middlePos);
-                    var normalisedDistanceFromMiddle = distanceFromMiddle / middlePos;
-                    waveout.Volume = Math.Clamp(1.0f - normalisedDistanceFromMiddle, 0, 1);
-                    await Task.Delay(10);
+                    Gain = Gain,
+                    Frequency = FrequencyHz,
+                    Type = SignalGeneratorType.Sin
                 }
+                .Take(TimeSpan.FromMilliseconds(durationRoundedToCompleteWavelengthsMs));
+
+                using (var waveout = new WaveOutEvent())
+                {
+                    waveout.Init(signal);
+                    waveout.Volume = 0f;
+                    waveout.Play();
+
+                    while (waveout.PlaybackState == PlaybackState.Playing)
+                    {
+                        var posMs = waveout.GetPositionTimeSpan().TotalMilliseconds;
+                        var middlePos = (float)durationRoundedToCompleteWavelengthsMs / 2;
+                        var distanceFromMiddle = Math.Abs((float)posMs - middlePos);
+                        var normalisedDistanceFromMiddle = distanceFromMiddle / middlePos;
+                        waveout.Volume = Math.Clamp(1.0f - normalisedDistanceFromMiddle, 0, 1);
+                        await Task.Delay(10);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                EventLog.WriteEntry("Spake ToneScheduler Play", ex.Message, EventLogEntryType.Error);
+            }
+            finally
+            {
+                OnToneEnded();
             }
         }
 

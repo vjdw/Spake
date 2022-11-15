@@ -18,32 +18,43 @@ using System.Windows.Shapes;
 using System.Drawing;
 using System.IO;
 using Spake.Properties;
-//using System.Windows.Forms;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Win32;
+using System.ComponentModel;
 
 namespace Spake
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class MainWindow : Window, INotifyPropertyChanged
     {
-        private static ToneScheduler _toneScheduler;
+        private static ToneScheduler _toneScheduler = default!;
         private TaskbarIcon _taskbarIcon;
         private bool _startMinimised = false;
 
-        public string IconPath { get; set; }
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        public int ToneSchedulerIntervalMs
+        private void OnPropertyChanged(string propertyName)
+        {
+            if (PropertyChanged != null)
+            {
+                PropertyChanged(this, new PropertyChangedEventArgs(propertyName));
+            }
+        }
+
+        public string IconPath { get; set; } = default!;
+
+        public int ToneSchedulerIntervalMinutes
         {
             get
             {
-                return _toneScheduler.IntervalMs;
+                return _toneScheduler.IntervalMs / 60000;
             }
             set
             {
-                _toneScheduler.IntervalMs = value;
+                _toneScheduler.IntervalMs = value * 60000;
+                OnPropertyChanged("LabelContentForInterval");
                 SaveSettings();
             }
         }
@@ -57,19 +68,21 @@ namespace Spake
             set
             {
                 _toneScheduler.FrequencyHz = value;
+                OnPropertyChanged("LabelContentForFrequency");
                 SaveSettings();
             }
         }
 
-        public int ToneSchedulerDurationMs
+        public int ToneSchedulerDurationSeconds
         {
             get
             {
-                return _toneScheduler.DurationMs;
+                return _toneScheduler.DurationMs / 1000;
             }
             set
             {
-                _toneScheduler.DurationMs = value;
+                _toneScheduler.DurationMs = value * 1000;
+                OnPropertyChanged("LabelContentForDuration");
                 SaveSettings();
             }
         }
@@ -83,15 +96,23 @@ namespace Spake
             set
             {
                 _toneScheduler.Gain = value;
+                OnPropertyChanged("LabelContentForGain");
                 SaveSettings();
             }
         }
+
+        public string LabelContentForInterval => $"Play tone every {ToneSchedulerIntervalMinutes} minute{(ToneSchedulerIntervalMinutes == 1 ? "" : "s")}";
+        public string LabelContentForDuration => $"Duration: {ToneSchedulerDurationSeconds} second{(ToneSchedulerDurationSeconds == 1 ? "" : "s")}";
+        public string LabelContentForFrequency => $"Frequency: {ToneSchedulerFrequencyHz} Hz";
+        public string LabelContentForGain => $"Gain: {ToneSchedulerGain:N2}";
 
         private string IconIdlePath => System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath.ToString(), "Icons", "idle.ico");
         private string IconPlayingPath => System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath.ToString(), "Icons", "playing.ico");
 
         public MainWindow()
         {
+            SystemEvents.SessionSwitch += new SessionSwitchEventHandler(SystemEvents_SessionSwitch);
+
             InitializeComponent();
             DataContext = this;
 
@@ -141,9 +162,7 @@ namespace Spake
 
         private async void btnTest_Click(object sender, RoutedEventArgs e)
         {
-            _taskbarIcon.Icon = new Icon(IconPlayingPath);
-            await _toneScheduler.Test();
-            _taskbarIcon.Icon = new Icon(IconIdlePath);
+            await _toneScheduler.Play();
         }
 
         private void chkStartAtLogin_Checked(object sender, RoutedEventArgs e)
@@ -179,6 +198,15 @@ namespace Spake
         {
             e.Cancel = true;
             WindowState = WindowState.Minimized;
+        }
+
+        async void SystemEvents_SessionSwitch(object sender, SessionSwitchEventArgs e)
+        {
+            // After waking from suspend we can't play audio until the user unlocks the session.
+            if (new[] { SessionSwitchReason.SessionLogon, SessionSwitchReason.SessionUnlock }.Contains(e.Reason))
+            {
+                await _toneScheduler.Play();
+            }
         }
     }
 }

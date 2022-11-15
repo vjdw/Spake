@@ -6,24 +6,42 @@
         xmlns:tb="http://www.hardcodet.net/taskbar" 
         xmlns:local="clr-namespace:Spake"
         mc:Ignorable="d"
-        Title="Speaker Waker" Height="320" Width="400"
+        Title="Speaker Waker"
+        Height="240" Width="400"
+        MinHeight="240" MinWidth="400"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing">
 
     <Grid>
 
         <StackPanel Margin="10,10,10,10">
-            <Label>Interval (ms)</Label>
-            <TextBox Text="{Binding ToneSchedulerIntervalMs }" />
-            <Label>Frequency (Hz)</Label>
-            <TextBox Text="{Binding ToneSchedulerFrequencyHz }" />
-            <Label>Duration (ms)</Label>
-            <TextBox Text="{Binding ToneSchedulerDurationMs }" />
-            <Label>Gain</Label>
-            <TextBox Text="{Binding ToneSchedulerGain }" />
+            <Grid Height="Auto">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                    <RowDefinition></RowDefinition>
+                </Grid.RowDefinitions>
+
+                <Label Grid.Row="0" Content="{Binding LabelContentForInterval}"></Label>
+                <Slider Grid.Row="0" Grid.Column="1" Value="{Binding ToneSchedulerIntervalMinutes }" Minimum="1" Maximum="60"></Slider>
+
+                <Label Grid.Row="1" Content="{Binding LabelContentForDuration}"></Label>
+                <Slider Grid.Row="1" Grid.Column="1" Value="{Binding ToneSchedulerDurationSeconds }" Minimum="1" Maximum="10" ></Slider>
+                
+                <Label Grid.Row="2" Content="{Binding LabelContentForFrequency}" ></Label>
+                <Slider Grid.Row="2" Grid.Column="1" Value="{Binding ToneSchedulerFrequencyHz }" Minimum="1" Maximum="24000"></Slider>
+
+                <Label Grid.Row="3" Content="{Binding LabelContentForGain}"></Label>
+                <Slider Grid.Row="3" Grid.Column="1"  Value="{Binding ToneSchedulerGain }" Minimum="0" Maximum="1"></Slider>
+            </Grid>
         </StackPanel>
 
-        <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,14" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
+        <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,10" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
 
         <Button x:Name="btnTest" Content="Test Tone" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10" Click="btnTest_Click" Height="24" Width="113"/>
 
