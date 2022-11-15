@@ -4,7 +4,10 @@ A Windows app that sits in your system tray, playing an inaudible tone every few
 
 Installer can be downloaded [here](https://github.com/vjdw/Spake/releases/download/v1.0/Spake.exe).
 
-![image](https://user-images.githubusercontent.com/9841768/201724258-240b545b-82ea-4454-a682-a69435cb7d00.png)
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/9841768/202033150-5f8af112-09c8-444a-854e-f8c5be1081c0.png" />
+</p>
 
-![image](https://user-images.githubusercontent.com/9841768/201724561-cb169ab4-a2a8-4f6d-9d32-d367e6b16e91.png)
-
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/9841768/201724561-cb169ab4-a2a8-4f6d-9d32-d367e6b16e91.png" />
+</p>
