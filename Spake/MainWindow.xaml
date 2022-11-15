@@ -11,6 +11,12 @@
         MinHeight="240" MinWidth="400"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing">
+    <Window.Background>
+        <LinearGradientBrush EndPoint="0.5,1" StartPoint="0.5,0">
+            <GradientStop Color="#FF909090" Offset="1"/>
+            <GradientStop Color="#FFE0E0E0"/>
+        </LinearGradientBrush>
+    </Window.Background>
 
     <Grid>
 
@@ -32,7 +38,7 @@
 
                 <Label Grid.Row="1" Content="{Binding LabelContentForDuration}"></Label>
                 <Slider Grid.Row="1" Grid.Column="1" Value="{Binding ToneSchedulerDurationSeconds }" Minimum="1" Maximum="10" ></Slider>
-                
+
                 <Label Grid.Row="2" Content="{Binding LabelContentForFrequency}" ></Label>
                 <Slider Grid.Row="2" Grid.Column="1" Value="{Binding ToneSchedulerFrequencyHz }" Minimum="1" Maximum="24000"></Slider>
 
@@ -41,9 +47,9 @@
             </Grid>
         </StackPanel>
 
-        <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,10" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
+        <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,14" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
 
-        <Button x:Name="btnTest" Content="Test Tone" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10" Click="btnTest_Click" Height="24" Width="113"/>
+        <Button x:Name="btnTest" Content="Test Tone" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,10,10" Click="btnTest_Click" Height="24" Width="113" />
 
     </Grid>
 
