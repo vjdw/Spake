@@ -1,6 +1,6 @@
 # Spake - Speaker Waker
 
-A Windows app that sits in your system tray, playing an inaudible tone every few minutes to stop your energy saving speakers from going into standby.
+Stop your energy saving speakers from going into standby. This Windows app sits in your system tray, playing an inaudible tone every few minutes, and whenever you log-in.
 
 Installer can be downloaded [here](https://github.com/vjdw/Spake/releases/download/v1.2/Spake.exe).
 
