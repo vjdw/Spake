@@ -5,7 +5,7 @@ Stop your energy saving speakers from going into standby. This Windows app sits 
 Installer can be downloaded [here](https://github.com/vjdw/Spake/releases/download/v1.2/Spake.exe).
 
 <p align="center">
-  <img src="https://user-images.githubusercontent.com/9841768/202033150-5f8af112-09c8-444a-854e-f8c5be1081c0.png" />
+  <img src="https://user-images.githubusercontent.com/9841768/206868113-0d47c5eb-fcf7-4cbc-bb76-e93b192fb7b4.png" />
 </p>
 
 <p align="center">
