@@ -1,32 +1,18 @@
-﻿using NAudio.Wave.SampleProviders;
-using NAudio.Wave;
+﻿using Hardcodet.Wpf.TaskbarNotification;
+using Microsoft.Win32;
+using NAudio.CoreAudioApi;
+using Spake.Properties;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
 using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Text.Json;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Drawing;
-using System.IO;
-using Spake.Properties;
-using Hardcodet.Wpf.TaskbarNotification;
-using Microsoft.Win32;
-using System.ComponentModel;
 
 namespace Spake
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     {
         private static ToneScheduler _toneScheduler = default!;
@@ -132,11 +118,47 @@ namespace Spake
             }
             chkStartAtLogin.IsChecked = (bool)Settings.Default["StartAtLogin"];
             _startMinimised = (bool)Settings.Default["StartMinimised"];
-
             if (_startMinimised)
             {
                 Application.Current.MainWindow.Hide();
             }
+
+            AddCheckboxesForActiveDevices();
+            LoadSelectedDevicesIntoToneScheduler();
+        }
+
+        private void AddCheckboxesForActiveDevices()
+        {
+            var selectedDevicesDocument = ReadSelectedDevicesFromUserSettings();
+
+            var activeDevices = new MMDeviceEnumerator()
+                .EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active)
+                .Select(_ => new SelectedDevice(_.ID, _.FriendlyName));
+
+            panelActiveDevices.Children.Clear();
+            foreach (var activeDevice in activeDevices)
+            {
+                var checkbox = new CheckBox();
+                checkbox.Content = activeDevice.FriendlyName;
+                checkbox.Margin = new Thickness(3);
+                checkbox.IsChecked = selectedDevicesDocument.SelectedDevices.Any(_ => _.Id == activeDevice.Id);
+                checkbox.Checked += DeviceCheckbox_CheckedChanged;
+                checkbox.Unchecked += DeviceCheckbox_CheckedChanged;
+                checkbox.Tag = activeDevice;
+                panelActiveDevices.Children.Add(checkbox);
+            }
+        }
+
+        private void LoadSelectedDevicesIntoToneScheduler()
+        {
+            var selectedDevicesDocument = ReadSelectedDevicesFromUserSettings();
+            _toneScheduler.SetTargetDevices(selectedDevicesDocument.SelectedDevices.Select(_ => _.Id).ToList());
+        }
+
+        private void DeviceCheckbox_CheckedChanged(object sender, RoutedEventArgs e)
+        {
+            SaveSelectedDevices();
+            LoadSelectedDevicesIntoToneScheduler();
         }
 
         private void ToneScheduler_ToneStarted(object? sender, EventArgs e)
@@ -160,9 +182,52 @@ namespace Spake
             Settings.Default.Save();
         }
 
+        private void SaveSelectedDevices()
+        {
+            var activeDeviceCheckboxes = panelActiveDevices.Children.OfType<UIElement>().Where(_ => _ is CheckBox).Select(_ => _ as CheckBox);
+
+            var previousSelectedDevicesDocument = ReadSelectedDevicesFromUserSettings();
+            var previouslySelectedDevicesThatAreNoLongerActive = previousSelectedDevicesDocument.SelectedDevices.Where(sd => !activeDeviceCheckboxes.Any(adc => (adc!.Tag as SelectedDevice)!.Id == sd.Id)).ToList();
+
+            var newSelectedDevicesDocument = new SelectedDevicesDocument();
+            foreach (var checkbox in activeDeviceCheckboxes)
+            {
+                if (checkbox!.IsChecked.GetValueOrDefault())
+                {
+                    var selectedDevice = checkbox.Tag as SelectedDevice;
+                    newSelectedDevicesDocument.SelectedDevices.Add(new SelectedDevice(selectedDevice!.Id, selectedDevice.FriendlyName));
+                }
+            }
+
+            // Preserve devices that are currently not shown in the UI, but were selected in the UI before.
+            newSelectedDevicesDocument.SelectedDevices = newSelectedDevicesDocument.SelectedDevices.Concat(previouslySelectedDevicesThatAreNoLongerActive).ToList();
+
+            Settings.Default["SelectedDevices"] = JsonSerializer.Serialize(newSelectedDevicesDocument);
+            Settings.Default.Save();
+        }
+
+        private SelectedDevicesDocument ReadSelectedDevicesFromUserSettings()
+        {
+            try
+            {
+                var selectedDevices = (string)Settings.Default["SelectedDevices"];
+                selectedDevices = string.IsNullOrEmpty(selectedDevices) ? "{}" : selectedDevices;
+                return JsonSerializer.Deserialize<SelectedDevicesDocument>(selectedDevices)!;
+            }
+            catch
+            {
+                return new SelectedDevicesDocument();
+            }
+        }
+
         private async void btnTest_Click(object sender, RoutedEventArgs e)
         {
             await _toneScheduler.Play();
+        }
+
+        private void btnRefreshDevices_Click(object sender, RoutedEventArgs e)
+        {
+            AddCheckboxesForActiveDevices();
         }
 
         private void chkStartAtLogin_Checked(object sender, RoutedEventArgs e)
@@ -181,6 +246,11 @@ namespace Spake
             key.DeleteValue("Spake", false);
 
             SaveSettings();
+        }
+
+        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            await _toneScheduler.Play();
         }
 
         private void Window_StateChanged(object sender, EventArgs e)

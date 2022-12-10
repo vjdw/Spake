@@ -1,4 +1,5 @@
-﻿using NAudio.Utils;
+﻿using NAudio.CoreAudioApi;
+using NAudio.Utils;
 using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using System;
@@ -22,6 +23,8 @@ namespace Spake
         public int FrequencyHz { get; set; }
         public double Gain { get; set; }
 
+        private HashSet<string> TargetDevices { get; set; } = new HashSet<string>();
+
         private Task _scheduleTask;
 
         public ToneScheduler(int intervalMs, int toneDurationMs, int toneFrequencyHz, double toneGain)
@@ -32,6 +35,11 @@ namespace Spake
             Gain = toneGain;
 
             _scheduleTask = Task.Run(Schedule);
+        }
+
+        public void SetTargetDevices(IEnumerable<string> deviceIds)
+        {
+            TargetDevices = deviceIds.ToHashSet();
         }
 
         private async Task Schedule()
@@ -57,33 +65,23 @@ namespace Spake
             {
                 OnToneStarted();
 
-                var wavelengthMs = 1000d / FrequencyHz;
-                var durationRoundedToCompleteWavelengthsMs = wavelengthMs * Math.Floor((DurationMs / wavelengthMs));
+                var enumerator = new MMDeviceEnumerator();
+                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToList();
 
-                var signal = new SignalGenerator()
+                var playToneTasks = TargetDevices.Select(async targetDeviceId =>
                 {
-                    Gain = Gain,
-                    Frequency = FrequencyHz,
-                    Type = SignalGeneratorType.Sin
-                }
-                .Take(TimeSpan.FromMilliseconds(durationRoundedToCompleteWavelengthsMs));
-
-                using (var waveout = new WaveOutEvent())
-                {
-                    waveout.Init(signal);
-                    waveout.Volume = 0f;
-                    waveout.Play();
-
-                    while (waveout.PlaybackState == PlaybackState.Playing)
+                    var targetDevice = devices.SingleOrDefault(_ => _.ID == targetDeviceId);
+                    if (targetDevice != null)
                     {
-                        var posMs = waveout.GetPositionTimeSpan().TotalMilliseconds;
-                        var middlePos = (float)durationRoundedToCompleteWavelengthsMs / 2;
-                        var distanceFromMiddle = Math.Abs((float)posMs - middlePos);
-                        var normalisedDistanceFromMiddle = distanceFromMiddle / middlePos;
-                        waveout.Volume = Math.Clamp(1.0f - normalisedDistanceFromMiddle, 0, 1);
-                        await Task.Delay(10);
+                        using var outputDevice = new WasapiOut(targetDevice, AudioClientShareMode.Shared, useEventSync: true, latency: 100);
+
+                        if (!await IsDevicePlayingAudio(targetDevice))
+                        {
+                            await PlayToneOnDevice(outputDevice);
+                        }
                     }
-                }
+                });
+                await Task.WhenAll(playToneTasks);
             }
             catch (Exception ex)
             {
@@ -93,6 +91,55 @@ namespace Spake
             {
                 OnToneEnded();
             }
+        }
+
+        private async Task PlayToneOnDevice(WasapiOut outputDevice)
+        {
+            // Prevents popping.
+            const int LeadOutMs = 1000;
+
+            var signalProvider = new SignalGenerator()
+            {
+                Gain = Gain,
+                Frequency = FrequencyHz,
+                Type = SignalGeneratorType.Sin
+            }
+            .Take(TimeSpan.FromMilliseconds(DurationMs + LeadOutMs));
+
+            FadeInOutSampleProvider faderProvider = new FadeInOutSampleProvider(signalProvider, initiallySilent: true);
+            faderProvider.BeginFadeIn(DurationMs / 2);
+
+            outputDevice.Init(faderProvider);
+            outputDevice.Volume = 1f;
+            outputDevice.Play();
+
+            var fadeOutTriggered = false;
+            while (outputDevice.PlaybackState == PlaybackState.Playing)
+            {
+                if (!fadeOutTriggered && outputDevice.GetPositionTimeSpan().TotalMilliseconds >= DurationMs / 2)
+                {
+                    faderProvider.BeginFadeOut(DurationMs / 2);
+                    fadeOutTriggered = true;
+                }
+                await Task.Delay(10);
+            }
+        }
+
+        private static async Task<bool> IsDevicePlayingAudio(MMDevice device)
+        {
+            using var recordingDevice = new WasapiLoopbackCapture(device);
+            var bytesRecorded = 0;
+            recordingDevice.DataAvailable += (object? sender, WaveInEventArgs e) => { bytesRecorded = e.BytesRecorded; };
+            recordingDevice.StartRecording();
+            await Task.Delay(500);
+            recordingDevice.StopRecording();
+            var deviceAlreadyPlayingAudio = bytesRecorded > 0;
+            return deviceAlreadyPlayingAudio;
+        }
+
+        private void RecordingDevice_DataAvailable(object? sender, WaveInEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         protected virtual void OnToneStarted()

@@ -94,5 +94,17 @@ namespace Spake.Properties {
                 this["StartMinimised"] = value;
             }
         }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string SelectedDevices {
+            get {
+                return ((string)(this["SelectedDevices"]));
+            }
+            set {
+                this["SelectedDevices"] = value;
+            }
+        }
     }
 }
