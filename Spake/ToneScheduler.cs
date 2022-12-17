@@ -110,7 +110,6 @@ namespace Spake
             faderProvider.BeginFadeIn(DurationMs / 2);
 
             outputDevice.Init(faderProvider);
-            outputDevice.Volume = 1f;
             outputDevice.Play();
 
             var fadeOutTriggered = false;
