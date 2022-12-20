@@ -49,7 +49,7 @@ namespace Spake.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("0.7")]
+        [global::System.Configuration.DefaultSettingValueAttribute("0.5")]
         public double Gain {
             get {
                 return ((double)(this["Gain"]));
@@ -61,7 +61,7 @@ namespace Spake.Properties {
         
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("20000")]
+        [global::System.Configuration.DefaultSettingValueAttribute("18000")]
         public int FrequencyHz {
             get {
                 return ((int)(this["FrequencyHz"]));

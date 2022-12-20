@@ -127,13 +127,21 @@ namespace Spake
         private static async Task<bool> IsDevicePlayingAudio(MMDevice device)
         {
             using var recordingDevice = new WasapiLoopbackCapture(device);
-            var bytesRecorded = 0;
-            recordingDevice.DataAvailable += (object? sender, WaveInEventArgs e) => { bytesRecorded = e.BytesRecorded; };
+
+            var audibleDataOnDevice = false;
+            recordingDevice.DataAvailable += (object? sender, WaveInEventArgs e) =>
+            {
+                audibleDataOnDevice = e.BytesRecorded == 0
+                    ? false
+                    : e.Buffer.Any(_ => _ != 0);
+            };
+
+            // This triggers DataAvailable handler above.
             recordingDevice.StartRecording();
-            await Task.Delay(500);
+            await Task.Delay(1000);
             recordingDevice.StopRecording();
-            var deviceAlreadyPlayingAudio = bytesRecorded > 0;
-            return deviceAlreadyPlayingAudio;
+            
+            return audibleDataOnDevice;
         }
 
         private void RecordingDevice_DataAvailable(object? sender, WaveInEventArgs e)
