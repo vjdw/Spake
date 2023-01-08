@@ -1,31 +1,40 @@
 ﻿using NAudio.CoreAudioApi;
-using NAudio.Utils;
 using NAudio.Wave;
-using NAudio.Wave.SampleProviders;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Windows;
 
 namespace Spake
 {
     internal class ToneScheduler
     {
-        public event EventHandler<EventArgs> ToneStarted;
-        public event EventHandler<EventArgs> ToneEnded;
+        public event EventHandler<EventArgs>? ToneStarted;
+        public event EventHandler<EventArgs>? ToneEnded;
 
-        public int IntervalMs { get; set; }
+        private int _intervalMs;
+        public int IntervalMs
+        {
+            get
+            {
+                return _intervalMs;
+            }
+            set
+            {
+                _intervalMs = value;
+                _scheduleLoopCancellationTokenSource?.Cancel();
+            }
+        }
         public int DurationMs { get; set; }
         public int FrequencyHz { get; set; }
         public double Gain { get; set; }
 
-        private HashSet<string> TargetDevices { get; set; } = new HashSet<string>();
+        private Dictionary<string, TonePlayer> TargetDevices { get; init; } = new Dictionary<string, TonePlayer>();
 
         private Task _scheduleTask;
+        private CancellationTokenSource _scheduleLoopCancellationTokenSource;
 
         public ToneScheduler(int intervalMs, int toneDurationMs, int toneFrequencyHz, double toneGain)
         {
@@ -34,12 +43,40 @@ namespace Spake
             FrequencyHz = toneFrequencyHz;
             Gain = toneGain;
 
+            _scheduleLoopCancellationTokenSource = new CancellationTokenSource();
             _scheduleTask = Task.Run(Schedule);
         }
 
-        public void SetTargetDevices(IEnumerable<string> deviceIds)
+        public void SetTargetDevices(IList<string> deviceUniqueIds)
         {
-            TargetDevices = deviceIds.ToHashSet();
+            var enumerator = new MMDeviceEnumerator();
+            var deviceDictionary = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToDictionary(ks => ks.ID, vs => vs);
+
+            foreach (var deviceToRemove in TargetDevices.Where(td => !deviceUniqueIds.Contains(td.Key)).ToList())
+            {
+                TargetDevices.Remove(deviceToRemove.Key);
+                try
+                {
+                    deviceToRemove.Value.Dispose();
+                }
+                catch
+                {
+                    // Don't care about WASAPI problems here.
+                }
+            }
+
+            foreach (var deviceUniqueIdToAdd in deviceUniqueIds.Where(duid => !TargetDevices.ContainsKey(duid)).ToList())
+            {
+                if (deviceDictionary.TryGetValue(deviceUniqueIdToAdd, out var device))
+                {
+                    var wasapiOut = new WasapiOut(device, AudioClientShareMode.Shared, useEventSync: true, latency: 100);
+                    TargetDevices.Add(deviceUniqueIdToAdd, new TonePlayer(wasapiOut));
+                }
+                else
+                {
+                    //EventLog.WriteEntry("Spake ToneScheduler SetTargetDevices", $"Could not find target device '{deviceUniqueIdToAdd}'", EventLogEntryType.Warning);
+                }
+            }
         }
 
         private async Task Schedule()
@@ -55,7 +92,13 @@ namespace Spake
                     EventLog.WriteEntry("Spake ToneScheduler Schedule", ex.Message, EventLogEntryType.Error);
                 }
 
-                await Task.Delay(IntervalMs);
+                try
+                {
+                    await Task.Delay(IntervalMs, _scheduleLoopCancellationTokenSource.Token);
+                }
+                catch (TaskCanceledException) { }
+
+                _scheduleLoopCancellationTokenSource = new CancellationTokenSource();
             };
         }
 
@@ -65,22 +108,7 @@ namespace Spake
             {
                 OnToneStarted();
 
-                var enumerator = new MMDeviceEnumerator();
-                var devices = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToList();
-
-                var playToneTasks = TargetDevices.Select(async targetDeviceId =>
-                {
-                    var targetDevice = devices.SingleOrDefault(_ => _.ID == targetDeviceId);
-                    if (targetDevice != null)
-                    {
-                        using var outputDevice = new WasapiOut(targetDevice, AudioClientShareMode.Shared, useEventSync: true, latency: 100);
-
-                        if (!await IsDevicePlayingAudio(targetDevice))
-                        {
-                            await PlayToneOnDevice(outputDevice);
-                        }
-                    }
-                });
+                var playToneTasks = TargetDevices.Select(async targetDevice => await targetDevice.Value.PlayTone(FrequencyHz, Gain, DurationMs));
                 await Task.WhenAll(playToneTasks);
             }
             catch (Exception ex)
@@ -93,77 +121,19 @@ namespace Spake
             }
         }
 
-        private async Task PlayToneOnDevice(WasapiOut outputDevice)
-        {
-            // Prevents popping.
-            const int LeadOutMs = 1000;
-
-            var signalProvider = new SignalGenerator()
-            {
-                Gain = Gain,
-                Frequency = FrequencyHz,
-                Type = SignalGeneratorType.Sin
-            }
-            .Take(TimeSpan.FromMilliseconds(DurationMs + LeadOutMs));
-
-            FadeInOutSampleProvider faderProvider = new FadeInOutSampleProvider(signalProvider, initiallySilent: true);
-            faderProvider.BeginFadeIn(DurationMs / 2);
-
-            outputDevice.Init(faderProvider);
-            outputDevice.Play();
-
-            var fadeOutTriggered = false;
-            while (outputDevice.PlaybackState == PlaybackState.Playing)
-            {
-                if (!fadeOutTriggered && outputDevice.GetPositionTimeSpan().TotalMilliseconds >= DurationMs / 2)
-                {
-                    faderProvider.BeginFadeOut(DurationMs / 2);
-                    fadeOutTriggered = true;
-                }
-                await Task.Delay(10);
-            }
-        }
-
-        private static async Task<bool> IsDevicePlayingAudio(MMDevice device)
-        {
-            using var recordingDevice = new WasapiLoopbackCapture(device);
-
-            var audibleDataOnDevice = false;
-            recordingDevice.DataAvailable += (object? sender, WaveInEventArgs e) =>
-            {
-                audibleDataOnDevice = e.BytesRecorded == 0
-                    ? false
-                    : e.Buffer.Any(_ => _ != 0);
-            };
-
-            // This triggers DataAvailable handler above.
-            recordingDevice.StartRecording();
-            await Task.Delay(1000);
-            recordingDevice.StopRecording();
-            
-            return audibleDataOnDevice;
-        }
-
-        private void RecordingDevice_DataAvailable(object? sender, WaveInEventArgs e)
-        {
-            throw new NotImplementedException();
-        }
-
         protected virtual void OnToneStarted()
         {
-            EventHandler<EventArgs> handler = ToneStarted;
-            if (handler != null)
+            if (ToneStarted != null)
             {
-                handler(this, EventArgs.Empty);
+                ToneStarted(this, EventArgs.Empty);
             }
         }
 
         protected virtual void OnToneEnded()
         {
-            EventHandler<EventArgs> handler = ToneEnded;
-            if (handler != null)
+            if (ToneEnded != null)
             {
-                handler(this, EventArgs.Empty);
+                ToneEnded(this, EventArgs.Empty);
             }
         }
     }

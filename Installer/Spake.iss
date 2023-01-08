@@ -6,7 +6,7 @@
 ; (To generate a new GUID, click Tools | Generate GUID inside the IDE.)
 AppId={{E75E0C90-F9D2-4A1D-93AD-10DE1E6C478E}
 AppName=Spake
-AppVersion=1.4
+AppVersion=1.5
 ;AppVerName=Spake 1.0
 AppPublisherURL=https://github.com/vjdw/Spake
 AppSupportURL=https://github.com/vjdw/Spake
