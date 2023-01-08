@@ -24,7 +24,6 @@ namespace Spake
             _fader = new FadeInOutSampleProvider(_toneGenerator, initiallySilent: true);
 
             _outputDevice.Init(_fader);
-            _outputDevice.Play();
         }
 
         public async Task PlayTone(int frequencyHz, double gain, int durationMs)
@@ -33,6 +32,7 @@ namespace Spake
             {
                 _toneGenerator.Frequency = frequencyHz;
                 _toneGenerator.Gain = gain;
+                _outputDevice.Play();
 
                 _fader.BeginFadeIn(durationMs / 2);
                 await Task.Delay(durationMs / 2);
@@ -42,6 +42,7 @@ namespace Spake
             }
             finally
             {
+                _outputDevice.Stop();
                 _toneGenerator.Frequency = 0;
             }
         }
