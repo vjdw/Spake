@@ -1,70 +1,61 @@
-﻿using NAudio.Wave;
+﻿using NAudio.CoreAudioApi;
+using NAudio.Wave;
 using NAudio.Wave.SampleProviders;
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace Spake
 {
-    internal class TonePlayer : IDisposable
+    internal class TonePlayer
     {
-        private WasapiOut _outputDevice;
-        private SignalGenerator _toneGenerator;
-        private FadeInOutSampleProvider _fader;
-        private bool disposedValue;
+        private readonly string OutputDeviceId;
 
-        public TonePlayer(WasapiOut outputDevice)
+        public TonePlayer(string deviceUniqueId)
         {
-            _outputDevice = outputDevice;
-            _toneGenerator = new SignalGenerator()
-            {
-                Gain = 0,
-                Frequency = 0,
-                Type = SignalGeneratorType.Sin
-            };
-            _fader = new FadeInOutSampleProvider(_toneGenerator, initiallySilent: true);
-
-            _outputDevice.Init(_fader);
+            OutputDeviceId = deviceUniqueId;
         }
 
         public async Task PlayTone(int frequencyHz, double gain, int durationMs)
         {
+            WasapiOut? outputDevice = null;
+
             try
             {
-                _toneGenerator.Frequency = frequencyHz;
-                _toneGenerator.Gain = gain;
-                _outputDevice.Play();
+                using var enumerator = new MMDeviceEnumerator();
+                var device = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).SingleOrDefault(_ => _.ID == OutputDeviceId);
+                if (device == null)
+                    return;
+                outputDevice = new WasapiOut(device, AudioClientShareMode.Shared, useEventSync: false, latency: 0);
 
-                _fader.BeginFadeIn(durationMs / 2);
+                var toneGenerator = new SignalGenerator()
+                {
+                    Gain = 0,
+                    Frequency = 0,
+                    Type = SignalGeneratorType.Sin
+                };
+                var fader = new FadeInOutSampleProvider(toneGenerator, initiallySilent: true);
+
+                outputDevice.Init(fader);
+
+                toneGenerator.Frequency = frequencyHz;
+                toneGenerator.Gain = gain;
+                outputDevice.Play();
+
+                fader.BeginFadeIn(durationMs / 2);
                 await Task.Delay(durationMs / 2);
 
-                _fader.BeginFadeOut(durationMs / 2);
+                fader.BeginFadeOut(durationMs / 2);
                 await Task.Delay(250 + durationMs / 2);
             }
             finally
             {
-                _outputDevice.Stop();
-                _toneGenerator.Frequency = 0;
-            }
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-            {
-                if (disposing)
+                if (outputDevice != null)
                 {
-                    _outputDevice.Dispose();
+                    outputDevice.Stop();
+                    outputDevice.Dispose();
                 }
-
-                disposedValue = true;
             }
-        }
-
-        public void Dispose()
-        {
-            // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
-            Dispose(disposing: true);
-            GC.SuppressFinalize(this);
         }
     }
 }

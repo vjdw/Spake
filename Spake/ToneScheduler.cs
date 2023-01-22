@@ -1,6 +1,4 @@
-﻿using NAudio.CoreAudioApi;
-using NAudio.Wave;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -49,33 +47,14 @@ namespace Spake
 
         public void SetTargetDevices(IList<string> deviceUniqueIds)
         {
-            var enumerator = new MMDeviceEnumerator();
-            var deviceDictionary = enumerator.EnumerateAudioEndPoints(DataFlow.Render, DeviceState.Active).ToDictionary(ks => ks.ID, vs => vs);
-
             foreach (var deviceToRemove in TargetDevices.Where(td => !deviceUniqueIds.Contains(td.Key)).ToList())
             {
                 TargetDevices.Remove(deviceToRemove.Key);
-                try
-                {
-                    deviceToRemove.Value.Dispose();
-                }
-                catch
-                {
-                    // Don't care about WASAPI problems here.
-                }
             }
 
             foreach (var deviceUniqueIdToAdd in deviceUniqueIds.Where(duid => !TargetDevices.ContainsKey(duid)).ToList())
             {
-                if (deviceDictionary.TryGetValue(deviceUniqueIdToAdd, out var device))
-                {
-                    var wasapiOut = new WasapiOut(device, AudioClientShareMode.Shared, useEventSync: true, latency: 100);
-                    TargetDevices.Add(deviceUniqueIdToAdd, new TonePlayer(wasapiOut));
-                }
-                else
-                {
-                    //EventLog.WriteEntry("Spake ToneScheduler SetTargetDevices", $"Could not find target device '{deviceUniqueIdToAdd}'", EventLogEntryType.Warning);
-                }
+                TargetDevices.Add(deviceUniqueIdToAdd, new TonePlayer(deviceUniqueIdToAdd));
             }
         }
 
