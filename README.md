@@ -2,7 +2,7 @@
 
 Stop your energy saving speakers from going into standby. This Windows app sits in your system tray, playing an inaudible tone every few minutes, and whenever you log-in.
 
-Installer can be downloaded [here](https://github.com/vjdw/Spake/releases/download/v1.5/Spake.exe).
+Installer can be downloaded [here](https://github.com/vjdw/Spake/releases/download/v1.6/Spake.exe).
 
 <p align="center">
   <img src="https://user-images.githubusercontent.com/9841768/206868113-0d47c5eb-fcf7-4cbc-bb76-e93b192fb7b4.png" />
