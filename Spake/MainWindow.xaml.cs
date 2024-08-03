@@ -3,7 +3,6 @@ using Microsoft.Win32;
 using NAudio.CoreAudioApi;
 using Spake.Properties;
 using System;
-using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
@@ -105,6 +104,8 @@ namespace Spake
             _taskbarIcon = (TaskbarIcon)FindResource("NotifyIcon");
             _taskbarIcon.Icon = new Icon(IconIdlePath);
 
+            _startMinimised = (bool)Settings.Default["StartMinimised"];
+
             if (_toneScheduler == null)
             {
                 _toneScheduler = new ToneScheduler(
@@ -116,8 +117,9 @@ namespace Spake
                 _toneScheduler.ToneStarted += ToneScheduler_ToneStarted;
                 _toneScheduler.ToneEnded += ToneScheduler_ToneEnded;
             }
+            
             chkStartAtLogin.IsChecked = (bool)Settings.Default["StartAtLogin"];
-            _startMinimised = (bool)Settings.Default["StartMinimised"];
+            chkStartMinimised.IsChecked = _startMinimised;
             if (_startMinimised)
             {
                 Application.Current.MainWindow.Hide();
@@ -248,9 +250,18 @@ namespace Spake
             SaveSettings();
         }
 
-        private async void Window_Loaded(object sender, RoutedEventArgs e)
+        private void chkStartMinimised_Checked(object sender, RoutedEventArgs e)
         {
-            await _toneScheduler.Play();
+            _startMinimised = true;
+
+            SaveSettings();
+        }
+
+        private void chkStartMinimised_Unchecked(object sender, RoutedEventArgs e)
+        {
+            _startMinimised = false;
+
+            SaveSettings();
         }
 
         private void Window_StateChanged(object sender, EventArgs e)
@@ -259,12 +270,9 @@ namespace Spake
             {
                 Application.Current.MainWindow.Hide();
             }
-
-            _startMinimised = WindowState == WindowState.Minimized;
-            SaveSettings();
         }
 
-        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        private void Window_Closing(object sender, CancelEventArgs e)
         {
             e.Cancel = true;
             WindowState = WindowState.Minimized;

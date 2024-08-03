@@ -45,17 +45,25 @@ namespace Spake
             _scheduleTask = Task.Run(Schedule);
         }
 
-        public void SetTargetDevices(IList<string> deviceUniqueIds)
+        public async void SetTargetDevices(IList<string> deviceUniqueIds)
         {
             foreach (var deviceToRemove in TargetDevices.Where(td => !deviceUniqueIds.Contains(td.Key)).ToList())
             {
                 TargetDevices.Remove(deviceToRemove.Key);
             }
 
+            var deviceAdded = false;
             foreach (var deviceUniqueIdToAdd in deviceUniqueIds.Where(duid => !TargetDevices.ContainsKey(duid)).ToList())
             {
                 TargetDevices.Add(deviceUniqueIdToAdd, new TonePlayer(deviceUniqueIdToAdd));
+                deviceAdded = true;
             }
+
+            if (deviceAdded)
+            {
+                await Play();
+            }
+            
         }
 
         private async Task Schedule()

@@ -10,7 +10,6 @@
         Height="530" Width="500"
         MinHeight="530" MinWidth="500"
         Background="#FFD7D7D7"
-        Loaded="Window_Loaded"
         StateChanged="Window_StateChanged"
         Closing="Window_Closing">
 
@@ -41,7 +40,7 @@
                     <Slider Grid.Row="2" Grid.Column="1" Value="{Binding ToneSchedulerFrequencyHz }" Minimum="1" Maximum="24000" SmallChange="1" LargeChange="100"></Slider>
 
                     <Label Grid.Row="3" Content="{Binding LabelContentForGain}"></Label>
-                    <Slider Grid.Row="3" Grid.Column="1"  Value="{Binding ToneSchedulerGain }" Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"></Slider>
+                    <Slider Grid.Row="3" Grid.Column="1" Value="{Binding ToneSchedulerGain }" Minimum="0" Maximum="1" SmallChange="0.01" LargeChange="0.1"></Slider>
                 </Grid>
             </GroupBox>
             <Button x:Name="btnTest" Content="Test Tone" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,10,0,0" Click="btnTest_Click" Height="24" Width="113" />
@@ -52,8 +51,11 @@
             <Button x:Name="btnRefreshDevices" Content="Refresh Device List" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,10,0,0" Click="btnRefreshDevices_Click" Height="24" Width="113" />
 
         </StackPanel>
-        
-        <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="10,0,0,14" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
+
+        <StackPanel VerticalAlignment="Bottom">
+            <CheckBox x:Name="chkStartMinimised" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14,0,0,10" Content="Start minimised" Width="196" Unchecked="chkStartMinimised_Unchecked" Checked="chkStartMinimised_Checked"/>
+            <CheckBox x:Name="chkStartAtLogin" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="14,0,0,16" Content="Start at Windows login" Width="196" Unchecked="chkStartAtLogin_Unchecked" Checked="chkStartAtLogin_Checked"/>
+        </StackPanel>
 
 
     </Grid>
